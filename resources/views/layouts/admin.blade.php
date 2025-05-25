@@ -8,7 +8,7 @@
     <meta name="description" content="" />
     <meta name="author" content="" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title') -Sipraga</title>
+    <title>@yield('title') -Sadesa</title>
     @stack('prepend-style')
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.21/datatables.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css" rel="stylesheet" />
@@ -26,7 +26,7 @@
         <div id="layoutSidenav_nav">
             @include('includes.sidebar-admin')
         </div>
-        <div id="layoutSidenav_content" style="background-color: #F1E9D2;">
+        <div id="layoutSidenav_content" style="background-color: #00a8ff;">
             @yield('container')
             @include('includes.footer-admin')
         </div>

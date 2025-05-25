@@ -1,5 +1,5 @@
 <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light"
-    style="background-color: #F1E9D2;" id="sidenavAccordion">
+    id="sidenavAccordion">
     <!-- Sidenav Toggle Button-->
     <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0" id="sidebarToggle">
         <i data-feather="menu"></i>
@@ -9,7 +9,7 @@
     <!-- * * * * * * When using an image, we recommend the SVG format.-->
     <!-- * * * * * * Dimensions: Maximum height: 32px, maximum width: 240px-->
     <a class="navbar-brand pe-3 ps-4 ps-lg-2" href="{{ route('admin-dashboard') }}">
-        Sipraga
+        Sadesa
     </a>
     <!-- Navbar Search Input-->
     <!-- * * Note: * * Visible only on and above the lg breakpoint-->
