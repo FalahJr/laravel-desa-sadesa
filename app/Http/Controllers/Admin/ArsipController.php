@@ -8,6 +8,7 @@ use App\Models\Surat;
 use App\Models\FieldDefinition;
 use App\Models\FieldValue;
 use App\Models\JenisSurat;
+use App\Models\Notifikasi;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -305,12 +306,22 @@ class ArsipController extends Controller
         DB::beginTransaction();
 
         try {
+            // Hapus semua notifikasi terkait surat ini
+            Notifikasi::where('surat_id', $surat->id)->delete();
             FieldValue::where('surat_id', $surat->id)->delete();
             $surat->delete();
 
             DB::commit();
 
-            return redirect()->route('arsip.index')->with('success', 'Surat Arsip berhasil dihapus.');
+            // return redirect()->route('arsip.index')->with('success', 'Surat Arsip berhasil dihapus.');
+            // return redirect()->route('surat-keluar.index')->with('success', 'Surat keluar berhasil dihapus.');
+            if (Session('user')['role'] == 'admin') {
+                return redirect('/admin/arsip')->with('success', 'Arsip berhasil dihapus.');
+            } elseif (Session('user')['role'] == 'kepala desa') {
+                return redirect('/kepala-desa/arsip')->with('success', 'Arsip berhasil dihapus.');
+            } else {
+                return redirect('/staff/arsip')->with('success', 'Arsip berhasil dihapus.');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors('Gagal menghapus data: ' . $e->getMessage());

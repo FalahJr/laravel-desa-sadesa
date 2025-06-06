@@ -356,6 +356,8 @@ class SuratMasukController extends Controller
         DB::beginTransaction();
 
         try {
+            // Hapus semua notifikasi terkait surat ini
+            Notifikasi::where('surat_id', $surat->id)->delete();
             FieldValue::where('surat_id', $surat->id)->delete();
             $surat->delete();
 
