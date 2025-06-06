@@ -59,6 +59,28 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                <div class="mb-3">
+                                    <label for="tipe" class="small mb-1">Tipe Jenis Surat</label>
+                                    <select name="tipe" id="tipe"
+                                        class="form-select @error('tipe') is-invalid @enderror" required>
+                                        <option value="">-- Pilih Tipe --</option>
+                                        <option value="masuk" {{ old('tipe', $item->tipe) === 'masuk' ? 'selected' : '' }}>
+                                            Surat Masuk</option>
+                                        <option value="keluar"
+                                            {{ old('tipe', $item->tipe) === 'keluar' ? 'selected' : '' }}>Surat Keluar
+                                        </option>
+                                    </select>
+                                    @error('tipe')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="mb-3">
+                                    <label for="footer" class="small mb-1">Footer (Opsional)</label>
+                                    <textarea name="footer" id="footer" class="form-control @error('footer') is-invalid @enderror" rows="3">{{ old('footer', $item->footer) }}</textarea>
+                                    @error('footer')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
 
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" value="1" id="addFieldsToggle"

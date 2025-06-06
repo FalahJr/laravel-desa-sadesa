@@ -66,6 +66,7 @@
                                     <tr>
                                         <th width="10">No.</th>
                                         <th>Nama Jenis Surat</th>
+                                        <th>Tipe</th>
                                         <th width="15%">Aksi</th>
                                     </tr>
                                 </thead>
@@ -96,6 +97,10 @@
                 {
                     data: 'nama',
                     name: 'nama'
+                },
+                {
+                    data: 'tipe',
+                    name: 'tipe'
                 },
                 {
                     data: 'action',

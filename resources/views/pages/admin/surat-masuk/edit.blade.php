@@ -43,8 +43,9 @@
                                 </div>
                             @endif
 
-                            <form action="{{ route('surat-masuk.update', $surat->id) }}" method="POST"
-                                enctype="multipart/form-data">
+                            <form
+                                action="{{ Session('user')['role'] == 'admin' ? route('surat-masuk.update', $surat->id) : route('surat-masuk.updateStaff', $surat->id) }}"
+                                method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
 
@@ -89,7 +90,7 @@
                                     @enderror
                                     @if ($surat->file_lampiran)
                                         <small class="text-muted">File saat ini:
-                                            <a href="{{ asset('storage/' . $surat->file_lampiran) }}" target="_blank">Lihat
+                                            <a href="{{ asset('/public/' . $surat->file_lampiran) }}" target="_blank">Lihat
                                                 Lampiran</a>
                                         </small>
                                     @endif
@@ -183,7 +184,7 @@
                 return;
             }
 
-            fetch(`/admin/field-definitions/${jenisSuratId}`)
+            fetch(`{{ url('/field-definitions') }}/${jenisSuratId}`)
                 .then(response => response.json())
                 .then(fields => {
                     let html = '';

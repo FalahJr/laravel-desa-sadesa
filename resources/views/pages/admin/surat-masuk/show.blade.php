@@ -23,7 +23,8 @@
                             <div class="page-header-subtitle">Informasi lengkap surat masuk</div>
                         </div>
                         <div class="col-12 col-xl-auto mt-4">
-                            <a class="btn btn-sm btn-light text-primary" href="{{ route('surat-masuk.index') }}">
+                            <a class="btn btn-sm btn-light text-primary"
+                                href="{{ Session('user')['role'] == 'admin' ? url('/admin/surat-masuk') : url('/staff/surat-masuk') }}">
                                 <i class="me-1" data-feather="arrow-left"></i>
                                 Kembali Ke Semua Surat
                             </a>
@@ -51,24 +52,65 @@
                             <div class="d-flex align-items-center justify-content-between w-100">
                                 <div>Detail Surat</div>
                                 <div>
+                                    @php
+                                        $role = Session('user')['role'];
+                                        $url = match ($role) {
+                                            'admin' => url('/admin/surat-masuk/' . $surat->id . '/download'),
+                                            'kepala desa' => url(
+                                                '/kepala-desa/surat-masuk/' . $surat->id . '/download',
+                                            ),
+                                            default => url('/staff/surat-masuk/' . $surat->id . '/download'),
+                                        };
+                                    @endphp
 
-                                    <a href="{{ route('surat-masuk.download', $surat->id) }}"
-                                        class="btn btn-sm btn-outline-primary ms-3" target="_blank">
-                                        <i class="fa fa-download mr-3"> </i>&nbsp; Download
-                                    </a>
+                                    {{-- <a href="{{ $url }}" class="btn btn-sm btn-outline-primary ms-3"
+                                        target="_blank">
+                                        <i class="fa fa-download mr-3"></i>&nbsp; Download
+                                    </a> --}}
+                                    @if (Session('user')['role'] == 'kepala desa')
+                                        <a href="{{ $url }}" class="btn btn-sm btn-outline-primary ms-3"
+                                            target="_blank">
+                                            <i class="fa fa-download mr-3"> </i>&nbsp; Preview PDF
+                                        </a>
+                                    @else
+                                        <a href="{{ $url }}" class="btn btn-sm btn-outline-primary ms-3"
+                                            target="_blank">
+                                            <i class="fa fa-download mr-3"> </i>&nbsp; Download
+                                        </a>
+                                    @endif
+
                                     @if (Session('user')['role'] == 'kepala desa')
                                         @if ($surat->status == 'Pending')
                                             <a href="{{ route('surat-masuk.approve', $surat->id) }}"
                                                 class="btn btn-sm btn-success">
-                                                <i class="fa fa-check" aria-hidden="true"></i> &nbsp; Setujui
+                                                <i class="fa fa-check" aria-hidden="true"></i> &nbsp; Sudah Dibaca
                                             </a>
-                                            <a href="{{ route('surat-masuk.reject', $surat->id) }}"
+                                            {{-- <a href="{{ route('surat-masuk.reject', $surat->id) }}"
                                                 class="btn btn-sm btn-danger">
                                                 <i class="fa fa-times" aria-hidden="true"></i> &nbsp; Tolak
-                                            </a>
+                                            </a> --}}
                                         @elseif($surat->status == 'Diterima')
                                             <span class=" btn-sm btn-success text-capitalize">
+                                                Surat Telah Terverifikasi
+                                            </span>
+                                        @else
+                                            <span class=" btn-sm btn-danger text-capitalize">
                                                 Surat Telah {{ $surat->status }}
+                                            </span>
+                                        @endif
+                                    @elseif (Session('user')['role'] == 'staff administrasi')
+                                        @if ($surat->status == 'Pending')
+                                            <a href="{{ route('surat-masuk.approveStaff', $surat->id) }}"
+                                                class="btn btn-sm btn-success">
+                                                <i class="fa fa-check" aria-hidden="true"></i> &nbsp; Setujui
+                                            </a>
+                                            {{-- <a href="{{ route('surat-masuk.reject', $surat->id) }}"
+                                                class="btn btn-sm btn-danger">
+                                                <i class="fa fa-times" aria-hidden="true"></i> &nbsp; Tolak
+                                            </a> --}}
+                                        @elseif($surat->status == 'Diterima')
+                                            <span class=" btn-sm btn-success text-capitalize">
+                                                Surat Telah Terverifikasi
                                             </span>
                                         @else
                                             <span class=" btn-sm btn-danger text-capitalize">
@@ -106,7 +148,15 @@
                                     </tr>
                                     <tr>
                                         <th>Status</th>
-                                        <td>{{ $surat->status }}</td>
+                                        @if (Session('user')['role'] == 'kepala desa')
+                                            @if ($surat->status == 'Pending')
+                                                <td class="text-warning">{{ $surat->status }}</td>
+                                            @elseif ($surat->status == 'Diterima')
+                                                <td class="text-success">Terverifikasi</td>
+                                            @endif
+                                        @else
+                                            <td>{{ $surat->status }}</td>
+                                        @endif
                                     </tr>
 
                                     <!-- Field Dinamis -->
@@ -152,7 +202,9 @@
                             @if ($surat->file_lampiran)
                                 @php
                                     $ext = strtolower(pathinfo($surat->file_lampiran, PATHINFO_EXTENSION));
-                                    $fileUrl = url('public/storage/' . $surat->file_lampiran);
+                                    // $fileUrl = url('public/storage/' . $surat->file_lampiran);
+                                    $fileUrl = asset('/public/' . $surat->file_lampiran);
+
                                 @endphp
 
                                 @if (in_array($ext, ['pdf']))

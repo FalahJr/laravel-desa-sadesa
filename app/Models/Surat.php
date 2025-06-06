@@ -15,7 +15,8 @@ class Surat extends Model
         'nama_surat',
         'tanggal_surat',
         'file_lampiran',
-        'status'
+        'status',
+        'user_id',
     ];
 
     protected $dates = ['tanggal_surat'];
@@ -30,5 +31,10 @@ class Surat extends Model
     public function fieldValues()
     {
         return $this->hasMany(FieldValue::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo('App\Models\User');
     }
 }

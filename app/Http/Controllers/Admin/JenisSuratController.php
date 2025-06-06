@@ -48,6 +48,9 @@ class JenisSuratController extends Controller
         // Validasi dasar untuk jenis surat dan optional fields
         $validatedData = $request->validate([
             'nama' => 'required|string|max:255|unique:jenis_surat,nama',
+            'tipe' => 'required|in:masuk,keluar',
+            'footer' => 'nullable|string',
+
             'add_fields' => 'nullable|boolean',
             'fields' => 'nullable|array',
             'fields.*.label' => 'required_with:add_fields|distinct|string|max:255',
@@ -61,6 +64,9 @@ class JenisSuratController extends Controller
         // Buat data JenisSurat dulu
         $jenisSurat = JenisSurat::create([
             'nama' => $validatedData['nama'],
+            'tipe' => $validatedData['tipe'],
+            'footer' => $validatedData['footer'] ?? null,
+
         ]);
 
         // Kalau checkbox tambah field dinamis dicentang dan ada fields
@@ -102,6 +108,10 @@ class JenisSuratController extends Controller
 
         $validatedData = $request->validate([
             'nama' => 'required|string|max:255|unique:jenis_surat,nama,' . $item->id,
+            'tipe' => 'required|in:masuk,keluar', // Validasi tipe
+            'footer' => 'nullable|string',
+
+
             // Jika ingin, bisa tambahkan validasi untuk fields di sini
         ]);
 

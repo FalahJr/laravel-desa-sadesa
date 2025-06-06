@@ -1,4 +1,4 @@
-<nav class="sidenav shadow-right sidenav-light" style="background-color: #F5F0E6;">
+<nav class="sidenav shadow-right sidenav-light ">
     <div class="sidenav-menu">
         <div class="nav accordion" id="accordionSidenav">
             <!-- Sidenav Menu Heading (Account)-->
@@ -63,9 +63,9 @@
                     Surat Keluar
                 </a>
 
-                <a class="nav-link {{ request()->is('admin/letter/arsip') ? 'active' : '' }}"
-                    href="{{ url('admin/letter/arsip') }}">
-                    <div class="nav-link-icon"><i data-feather="arrow-left"></i></div>
+                <a class="nav-link {{ request()->is('admin/arsip') ? 'active' : '' }}"
+                    href="{{ url('admin/arsip') }}">
+                    <div class="nav-link-icon"><i data-feather="archive"></i></div>
                     Arsip
                 </a>
 
@@ -96,17 +96,61 @@
                     <div class="nav-link-icon"><i data-feather="arrow-right"></i></div>
                     Surat Masuk
                 </a>
-                <a class="nav-link {{ request()->is('kepala-desa/letter/surat-keluar') ? 'active' : '' }}"
-                    href="{{ url('kepala-desa/letter/surat-keluar') }}">
+                <a class="nav-link {{ request()->is('kepala-desa/surat-keluar') ? 'active' : '' }}"
+                    href="{{ url('kepala-desa/surat-keluar') }}">
                     <div class="nav-link-icon"><i data-feather="arrow-left"></i></div>
                     Surat Keluar
+                </a>
+
+                <a class="nav-link {{ request()->is('kepala-desa/arsip') ? 'active' : '' }}"
+                    href="{{ url('kepala-desa/arsip') }}">
+                    <div class="nav-link-icon"><i data-feather="archive"></i></div>
+                    Arsip
                 </a>
 
 
                 {{-- <a class="nav-link {{ request()->is('kepala-sekolah/setting*') ? 'active' : '' }}"
                     href="{{ url('kepala-sekolah/setting/') }}">
                     <div class="nav-link-icon"><i data-feather="settings"></i></div>
-                    Profile
+                    Profilel
+                </a> --}}
+            @endif
+
+            @if (Session('user')['role'] == 'staff administrasi')
+                {{-- <a class="nav-link {{ request()->is('admin/sender*') ? 'active' : '' }}"
+                    href="{{ route('sender.index') }}">
+                    <div class="nav-link-icon"><i data-feather="users"></i></div>
+                    Pengirim Surat
+                </a> --}}
+
+                <a class="nav-link {{ request()->is('staff/dashboard') ? 'active' : '' }}"
+                    href="{{ url('staff/dashboard') }}">
+                    <div class="nav-link-icon"><i data-feather="activity"></i></div>
+                    Dashboard
+                </a>
+
+                <a class="nav-link {{ request()->is('staff/surat-masuk') ? 'active' : '' }}"
+                    href="{{ url('staff/surat-masuk') }}">
+                    <div class="nav-link-icon"><i data-feather="arrow-right"></i></div>
+                    Surat Masuk
+                </a>
+                <a class="nav-link {{ request()->is('staff/surat-keluar') ? 'active' : '' }}"
+                    href="{{ url('staff/surat-keluar') }}">
+                    <div class="nav-link-icon"><i data-feather="arrow-left"></i></div>
+                    Surat Keluar
+                </a>
+
+                <a class="nav-link {{ request()->is('staff/arsip') ? 'active' : '' }}"
+                    href="{{ url('staff/arsip') }}">
+                    <div class="nav-link-icon"><i data-feather="archive"></i></div>
+                    Arsip
+                </a>
+
+
+                {{-- <a class="nav-link {{ request()->is('kepala-sekolah/setting*') ? 'active' : '' }}"
+                    href="{{ url('kepala-sekolah/setting/') }}">
+                    <div class="nav-link-icon"><i data-feather="settings"></i></div>
+                    Profilel
                 </a> --}}
             @endif
 

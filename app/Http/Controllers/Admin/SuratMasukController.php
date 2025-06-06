@@ -8,53 +8,68 @@ use App\Models\Surat;
 use App\Models\FieldDefinition;
 use App\Models\FieldValue;
 use App\Models\JenisSurat;
+use App\Models\Notifikasi;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
-
+use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SuratMasukController extends Controller
 {
     public function index()
     {
         if (request()->ajax()) {
-            $query = Surat::where('tipe_surat', 'masuk')->where('status', 'Pending')->latest()->get();
+            $query = Surat::with('jenisSurat')
+                ->where('tipe_surat', 'masuk')
+                ->where('status', 'Pending');
+
+            if (request()->has('jenis_surat_id') && request('jenis_surat_id') != '') {
+                $query->where('jenis_surat_id', request('jenis_surat_id'));
+            }
+
+            $query = $query->latest()->get();
 
             return DataTables::of($query)
+                ->addColumn('jenis_surat', function ($item) {
+                    return $item->jenisSurat ? $item->jenisSurat->nama : '-';
+                })
                 ->addColumn('action', function ($item) {
-                    if (Session('user')['role'] == 'admin') {
+                    $prefix = Session('user')['role'] == 'admin' ? 'admin' : (Session('user')['role'] == 'kepala desa' ? 'kepala-desa' : 'staff');
 
-                        $prefix = 'admin'; // sesuaikan jika ada custom prefix
-                        return '
-                     <a class="btn btn-info btn-xs" href="' . url($prefix . '/surat-masuk/' . $item->id) . '">
-            <i class="fas fa-eye"></i> &nbsp; Lihat
-        </a>
+                    $buttons = '<a class="btn btn-info btn-xs" href="' . url($prefix . '/surat-masuk/' . $item->id) . '">
+                                <i class="fas fa-eye"></i> &nbsp; Lihat
+                            </a>';
+
+                    if (Session('user')['role'] != 'kepala desa') {
+                        $buttons .= '
                         <a class="btn btn-primary btn-xs" href="' . url($prefix . '/surat-masuk/' . $item->id . '/edit') . '">
                             <i class="fas fa-edit"></i> &nbsp; Ubah
-                        </a>
+                        </a>';
+                    }
+
+                    if (Session('user')['role'] == 'admin') {
+                        $buttons .= '
                         <form action="' . route('surat-masuk.destroy', $item->id) . '" method="POST" style="display:inline;" onsubmit="return confirm(\'Yakin ingin menghapus surat ini?\')">
                             ' . method_field('delete') . csrf_field() . '
                             <button class="btn btn-danger btn-xs" type="submit">
                                 <i class="far fa-trash-alt"></i> &nbsp; Hapus
                             </button>
-                        </form>
-                    ';
-                    } else if (Session('user')['role'] == 'kepala desa') {
-                        $prefix = 'kepala-desa'; // sesuaikan jika ada custom prefix
-                        return '
-                     <a class="btn btn-info btn-xs" href="' . url($prefix . '/surat-masuk/' . $item->id) . '">
-            <i class="fas fa-eye"></i> &nbsp; Lihat
-        </a>
-                       
-                    ';
+                        </form>';
                     }
+
+                    return $buttons;
                 })
                 ->addIndexColumn()
                 ->removeColumn('id')
                 ->make();
         }
 
-        return view('pages.admin.surat-masuk.index');
+        // Kirim data jenis_surat bertipe masuk untuk dropdown filter
+        $jenisSurat = JenisSurat::where('tipe', 'masuk')->get();
+
+        return view('pages.admin.surat-masuk.index', compact('jenisSurat'));
     }
 
     public function create(Request $request)
@@ -147,9 +162,19 @@ class SuratMasukController extends Controller
             $nomorSurat = $request->jenis_surat_id . '/' . $nextIdFormatted . '/' . $tanggalSuratFormatted;
 
             // Cek apakah ada file lampiran baru yang diupload
+            // if ($request->hasFile('file_lampiran')) {
+            //     $filePath = $request->file('file_lampiran')->store('assets/lampiran', 'public');
+            // }
+
+            // Upload file ke public/assets/lampiran
             if ($request->hasFile('file_lampiran')) {
-                $filePath = $request->file('file_lampiran')->store('assets/lampiran', 'public');
+                $file = $request->file('file_lampiran');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $destinationPath = public_path('assets/lampiran');
+                $file->move($destinationPath, $filename);
+                $filePath = 'assets/lampiran/' . $filename; // Simpan path relatif ke file
             }
+
 
             // Simpan surat masuk
             $surat = Surat::create([
@@ -174,9 +199,24 @@ class SuratMasukController extends Controller
                 }
             }
 
+            // Tambahkan notifikasi untuk Kepala Desa
+            $notifikasi = new Notifikasi;
+            $notifikasi->role = 'kepala desa';
+            $notifikasi->surat_id = $nextId; // Atau set sesuai user yang dituju
+            $notifikasi->judul = "Terdapat surat masuk baru # '" . $nomorSurat;
+            $notifikasi->deskripsi = "Terdapat surat masuk baru dengan nomor '" . $nomorSurat . "' yang perlu segera diverifikasi.";
+            $notifikasi->is_seen = 'N';
+            $notifikasi->created_at = \Carbon\Carbon::now();
+            $notifikasi->updated_at = \Carbon\Carbon::now();
+            $notifikasi->save();
+
             DB::commit();
 
-            return redirect()->route('surat-masuk.index')->with('success', 'Surat masuk berhasil disimpan.');
+            if (Session('user')['role'] == 'admin') {
+                return redirect('/admin/surat-masuk')->with('success', 'Surat masuk berhasil disimpan.');
+            } else {
+                return redirect('/staff/surat-masuk')->with('success', 'Surat masuk berhasil disimpan.');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors('Gagal menyimpan data: ' . $e->getMessage())->withInput();
@@ -253,12 +293,28 @@ class SuratMasukController extends Controller
             $surat->jenis_surat_id = $request->jenis_surat_id;
 
             // Update file lampiran jika ada file baru
+            // if ($request->hasFile('file_lampiran')) {
+            //     if ($surat->file_lampiran && \Storage::disk('public')->exists($surat->file_lampiran)) {
+            //         \Storage::disk('public')->delete($surat->file_lampiran);
+            //     }
+            //     $filePath = $request->file('file_lampiran')->store('assets/lampiran', 'public');
+            //     $surat->file_lampiran = $filePath;
+            // }
+
+            // Upload file baru jika ada
             if ($request->hasFile('file_lampiran')) {
-                if ($surat->file_lampiran && \Storage::disk('public')->exists($surat->file_lampiran)) {
-                    \Storage::disk('public')->delete($surat->file_lampiran);
+                // Hapus file lama jika ada
+                $oldPath = public_path($surat->file_lampiran);
+                if ($surat->file_lampiran && file_exists($oldPath)) {
+                    unlink($oldPath);
                 }
-                $filePath = $request->file('file_lampiran')->store('assets/lampiran', 'public');
-                $surat->file_lampiran = $filePath;
+
+                $file = $request->file('file_lampiran');
+                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $destinationPath = public_path('assets/lampiran');
+                $file->move($destinationPath, $filename);
+
+                $surat->file_lampiran = 'assets/lampiran/' . $filename;
             }
 
             $surat->save();
@@ -280,7 +336,12 @@ class SuratMasukController extends Controller
 
             DB::commit();
 
-            return redirect()->route('surat-masuk.index')->with('success', 'Surat masuk berhasil diperbarui.');
+            // return redirect()->route('surat-masuk.index')->with('success', 'Surat masuk berhasil diperbarui.');
+            if (Session('user')['role'] == 'admin') {
+                return redirect('/admin/surat-masuk')->with('success', 'Surat masuk berhasil diperbarui.');
+            } else {
+                return redirect('/staff/surat-masuk')->with('success', 'Surat masuk berhasil diperbarui.');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors('Gagal memperbarui data: ' . $e->getMessage())->withInput();
@@ -300,7 +361,12 @@ class SuratMasukController extends Controller
 
             DB::commit();
 
-            return redirect()->route('surat-masuk.index')->with('success', 'Surat masuk berhasil dihapus.');
+            // return redirect()->route('surat-masuk.index')->with('success', 'Surat masuk berhasil dihapus.');
+            if (Session('user')['role'] == 'admin') {
+                return redirect('/admin/surat-masuk')->with('success', 'Surat masuk berhasil dihapus.');
+            } else {
+                return redirect('/staff/surat-masuk')->with('success', 'Surat masuk berhasil dihapus.');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors('Gagal menghapus data: ' . $e->getMessage());
@@ -326,6 +392,13 @@ class SuratMasukController extends Controller
     public function download($id)
     {
         $surat = Surat::with(['jenisSurat', 'fieldValues.fieldDefinition'])->findOrFail($id);
+        // $user = User::where('role', 'kepala desa')->first();
+        $user = null;
+        if ($surat->status != "Pending") {
+            $user = User::where('id', $surat->user_id)->first();
+        } else {
+            $user = null;
+        }
 
         // Mapping field dinamis dengan label-nya
         $fields = $surat->fieldValues->map(function ($fv) {
@@ -340,7 +413,31 @@ class SuratMasukController extends Controller
             ? url('public/storage/' . $surat->file_lampiran)
             : null;
 
-        return view('pages.admin.surat-masuk.download', compact('surat', 'fields', 'lampiranUrl'));
+        $downloadUrl = url("/arsip/{$surat->id}/download"); // atau route() jika pakai route name
+        // Generate QR code sebagai PNG base64
+        // Hasilkan QR Code dalam format PNG dan encode ke base64
+        $qrCodeImage = QrCode::format('svg')
+            ->size(150)
+            ->generate($downloadUrl);
+
+        // Konversi hasilnya jadi base64 agar bisa dipakai sebagai <img src="...">
+        $qrCode = 'data:image/png;base64,' . base64_encode($qrCodeImage);
+
+
+        // dd($fields);
+        // Kirim data ke view untuk PDF
+        $pdf = Pdf::loadView('pages.admin.surat-masuk.download', [
+            'surat' => $surat,
+            'fields' => $fields,
+            'lampiranUrl' => $lampiranUrl,
+            'user' => $user,
+            'qrCode' => $qrCode,
+        ]);
+
+
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->stream('surat-keterangan-kematian.pdf');
     }
 
     public function approve(Request $request, $id)
@@ -353,7 +450,11 @@ class SuratMasukController extends Controller
             return redirect()->back()->with('info', 'Surat ini sudah disetujui sebelumnya.');
         }
 
-        $item->update(['status' => 'Diterima']);
+
+        $item->update([
+            'status' => 'Diterima',
+            'user_id' => Session('user')['id'], // Set user_id dari sesi
+        ]);
 
         return redirect()->back()
             ->with('success', 'Surat berhasil disetujui.');
@@ -367,7 +468,12 @@ class SuratMasukController extends Controller
             return redirect()->back()->with('info', 'Surat ini sudah ditolak sebelumnya.');
         }
 
-        $item->update(['status' => 'Ditolak']);
+
+        $item->update([
+            'status' => 'Ditolak',
+            'user_id' => Session('user')['id'], // Set user_id dari sesi
+        ]);
+
 
         return redirect()->back()
             ->with('success', 'Surat berhasil ditolak.');

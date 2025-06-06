@@ -7,8 +7,15 @@
                 <div class="col-lg-5">
                     <!-- Basic login form-->
                     <div class="card shadow-lg border-0 rounded-lg mt-5">
-                        <div class="card-header justify-content-center">
-                            <h3 class="fw-light my-4">Login Web Sadesa</h3>
+                        <div class="card-header text-center">
+                            {{-- Logo Unesa dan SIPRAGA --}}
+                            <div class="mb-3">
+                                <img src="{{ url('/public/assets/logo-unesa.jpg') }}" alt="Logo Unesa"
+                                    style="height: 20vh; margin-right: 10px;">
+                                <img src="{{ url('/public/assets/logo-sadesa.png') }}" alt="Logo SIPRAGA"
+                                    style="height: 25vh;">
+                            </div>
+                            <h1 class="fw-light my-4 bold">LOGIN SADESA</h1>
                         </div>
                         <div class="card-body">
                             @if (session()->has('success'))
